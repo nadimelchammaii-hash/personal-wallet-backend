@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BudgetController;
 use App\Http\Controllers\Api\V1\CategoryController;
+use App\Http\Controllers\Api\V1\GoalController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\TransactionController;
 use Illuminate\Support\Facades\Route;
@@ -28,5 +29,9 @@ Route::prefix('v1')->group(function (): void {
         Route::apiResource('transactions', TransactionController::class);
 
         Route::apiResource('budgets', BudgetController::class)->except(['show']);
+
+        Route::apiResource('goals', GoalController::class)->except(['show']);
+        Route::get('/goals/{goal}/contributions', [GoalController::class, 'contributions']);
+        Route::post('/goals/{goal}/contributions', [GoalController::class, 'addContribution']);
     });
 });
