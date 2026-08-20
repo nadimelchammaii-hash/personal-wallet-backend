@@ -1,4 +1,7 @@
 *.log
+*.sqlite
+*.sqlite-*
+/personal_wallet_backend
 .DS_Store
 .env
 .env.backup

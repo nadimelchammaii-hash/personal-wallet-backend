@@ -1,7 +1,10 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\ProfileController;
+use App\Http\Controllers\Api\V1\TransactionController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
@@ -15,5 +18,12 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::put('/me', [ProfileController::class, 'update']);
         Route::put('/me/password', [ProfileController::class, 'updatePassword']);
+
+        Route::apiResource('accounts', AccountController::class);
+
+        Route::apiResource('categories', CategoryController::class)->except(['show']);
+
+        Route::post('/transfers', [TransactionController::class, 'transfer']);
+        Route::apiResource('transactions', TransactionController::class);
     });
 });
