@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\BudgetController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\TransactionController;
@@ -25,5 +26,7 @@ Route::prefix('v1')->group(function (): void {
 
         Route::post('/transfers', [TransactionController::class, 'transfer']);
         Route::apiResource('transactions', TransactionController::class);
+
+        Route::apiResource('budgets', BudgetController::class)->except(['show']);
     });
 });
