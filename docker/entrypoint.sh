@@ -19,4 +19,4 @@ php artisan migrate --force
 # from the spawned server process whenever a .env file is present, since it
 # re-execs on .env changes and otherwise only passes through a fixed
 # whitelist of variables.
-exec php artisan serve --host=0.0.0.0 --port=9000 --no-reload
+exec php artisan serve --host=0.0.0.0 --port=9300 --no-reload
