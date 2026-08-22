@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\GoalController;
 use App\Http\Controllers\Api\V1\ProfileController;
+use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\TransactionController;
 use Illuminate\Support\Facades\Route;
 
@@ -36,5 +37,9 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/goals/{goal}/contributions', [GoalController::class, 'addContribution']);
 
         Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
+
+        Route::get('/reports/spending-trends', [ReportController::class, 'spendingTrends']);
+        Route::get('/reports/category-breakdown', [ReportController::class, 'categoryBreakdown']);
+        Route::get('/reports/budget-performance', [ReportController::class, 'budgetPerformance']);
     });
 });
