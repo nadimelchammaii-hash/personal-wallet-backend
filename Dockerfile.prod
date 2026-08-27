@@ -1,0 +1,37 @@
+# Production image. Unlike Dockerfile (dev, bind-mounted source + `artisan
+# serve`), this bakes the application into the image and runs it under
+# PHP-FPM behind Caddy (see personal-wallet-frontend/Dockerfile.prod).
+
+# ---- Stage 1: install dependencies with dev tools available ----
+FROM composer:2 AS vendor
+
+WORKDIR /app
+
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --no-interaction --prefer-dist --optimize-autoloader
+
+COPY . .
+RUN composer dump-autoload --no-dev --optimize
+
+# ---- Stage 2: runtime ----
+FROM php:8.4-fpm AS runtime
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libzip-dev libpng-dev \
+    && docker-php-ext-install pdo_mysql zip bcmath \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /var/www/html
+
+COPY --from=vendor /app ./
+
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+
+COPY docker/entrypoint.prod.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+USER www-data
+
+EXPOSE 9000
+
+ENTRYPOINT ["entrypoint.sh"]
