@@ -32,6 +32,12 @@ class DemoController extends Controller
             'demo_expires_at' => now()->addHours(2),
         ])->save();
 
+        // refresh(), not fresh(): currency/timezone are DB-defaulted columns
+        // not included in the insert above (same reasoning as register()),
+        // and refresh() re-syncs this same instance instead of returning a
+        // new one, preserving wasRecentlyCreated so the response is a 201.
+        $user->refresh();
+
         $this->demoData->seed($user);
 
         Auth::login($user);

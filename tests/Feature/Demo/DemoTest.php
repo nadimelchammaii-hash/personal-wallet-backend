@@ -12,7 +12,10 @@ beforeEach(function (): void {
 test('a guest can start a demo session with seeded data and is logged in', function (): void {
     $response = $this->postJson('/api/v1/demo-login');
 
-    $response->assertCreated()->assertJsonPath('data.is_demo', true);
+    $response->assertCreated()
+        ->assertJsonPath('data.is_demo', true)
+        ->assertJsonPath('data.currency', 'USD')
+        ->assertJsonPath('data.timezone', 'UTC');
 
     $user = User::where('is_demo', true)->firstOrFail();
     $this->assertAuthenticatedAs($user);
