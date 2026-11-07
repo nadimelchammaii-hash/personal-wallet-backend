@@ -4,12 +4,18 @@ namespace App\Http\Requests\Api\V1\Profile;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class UpdateProfileRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return ! $this->user()->is_demo;
+    }
+
+    protected function failedAuthorization(): void
+    {
+        throw ValidationException::withMessages(['email' => 'Demo accounts can\'t change profile info.']);
     }
 
     public function rules(): array

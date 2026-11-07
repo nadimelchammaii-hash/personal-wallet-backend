@@ -16,6 +16,7 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'currency' => $this->currency,
             'timezone' => $this->timezone,
+            'is_demo' => (bool) $this->is_demo,
             'created_at' => $this->created_at,
         ];
     }
