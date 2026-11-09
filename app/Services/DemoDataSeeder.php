@@ -96,7 +96,7 @@ class DemoDataSeeder
             $groceryDays = $isCurrentMonth ? [2, 5, 8] : [4, 11, 18, 25];
             foreach ($groceryDays as $i => $day) {
                 if (! $date = $seedDay($day)) continue;
-                $amount = $isCurrentMonth ? [120, 95, 110][$i] : fake()->randomFloat(2, 65, 95);
+                $amount = $isCurrentMonth ? [120, 95, 110][$i] : $this->randomAmount(65, 95);
                 $this->transaction($user, $checking, 'expense', $food, $amount, $date, 'Groceries');
             }
 
@@ -104,19 +104,19 @@ class DemoDataSeeder
             $transportDays = $isCurrentMonth ? [6] : [7, 16, 25];
             foreach ($transportDays as $day) {
                 if (! $date = $seedDay($day)) continue;
-                $this->transaction($user, $checking, 'expense', $transportation, fake()->randomFloat(2, 35, 55), $date, 'Gas / transit');
+                $this->transaction($user, $checking, 'expense', $transportation, $this->randomAmount(35, 55), $date, 'Gas / transit');
             }
 
             // Entertainment — streaming + the occasional night out.
             $entertainmentDays = $isCurrentMonth ? [9] : [10, 20];
             foreach ($entertainmentDays as $day) {
                 if (! $date = $seedDay($day)) continue;
-                $this->transaction($user, $creditCard, 'expense', $entertainment, fake()->randomFloat(2, 25, 60), $date, 'Streaming / nights out');
+                $this->transaction($user, $creditCard, 'expense', $entertainment, $this->randomAmount(25, 60), $date, 'Streaming / nights out');
             }
 
             // Shopping — one discretionary purchase most months.
             if ($date = $seedDay(14)) {
-                $this->transaction($user, $creditCard, 'expense', $shopping, fake()->randomFloat(2, 40, 140), $date, 'Clothing / home goods');
+                $this->transaction($user, $creditCard, 'expense', $shopping, $this->randomAmount(40, 140), $date, 'Clothing / home goods');
             }
 
             // A few irregular, one-off expenses scattered across the
@@ -206,6 +206,16 @@ class DemoDataSeeder
                 $goal->update(['status' => 'completed']);
             }
         }
+    }
+
+    /**
+     * A random amount with cents, without reaching for fake(): Faker is a
+     * require-dev package stripped from the production image, and this
+     * runs on every live demo-login request, not just in tests.
+     */
+    protected function randomAmount(float $min, float $max): float
+    {
+        return random_int((int) round($min * 100), (int) round($max * 100)) / 100;
     }
 
     protected function transaction(User $user, $account, string $type, Category $category, float $amount, Carbon $date, string $note): void
