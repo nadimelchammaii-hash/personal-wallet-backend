@@ -13,6 +13,9 @@ use Illuminate\Support\Str;
 
 class DemoController extends Controller
 {
+    /** Kept in sync with the "Demo mode" copy in the frontend app bar. */
+    public const int LIFETIME_HOURS = 24;
+
     public function __construct(protected DemoDataSeeder $demoData) {}
 
     public function login(Request $request): UserResource
@@ -29,7 +32,7 @@ class DemoController extends Controller
         ]);
         $user->forceFill([
             'is_demo' => true,
-            'demo_expires_at' => now()->addHours(2),
+            'demo_expires_at' => now()->addHours(self::LIFETIME_HOURS),
         ])->save();
 
         // refresh(), not fresh(): currency/timezone are DB-defaulted columns
