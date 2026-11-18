@@ -1,0 +1,88 @@
+# Local development stack for the Personal Wallet app. Lives in the
+# backend repo, but also builds the frontend from a sibling checkout
+# (../personal-wallet-frontend) — backend and frontend are separate git
+# repos, and this file is the neutral orchestration point that ties them
+# together for `docker compose up`.
+#
+# mysql is mapped to host port 3308 and phpmyadmin to 8082 (not 3306/3307
+# and 8080) to avoid clashing with a locally installed MySQL service and
+# with other projects' containers also running on this machine.
+#
+# name: pinned so moving this file (it used to live one level up, at the
+# project root) doesn't change Compose's default project name — which is
+# otherwise derived from the compose file's own directory — and orphan
+# the existing wallet_* volumes under a new name.
+name: personalwallet
+
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: personal_wallet_backend
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: wallet
+      MYSQL_PASSWORD: wallet
+    ports:
+      - "3308:3306"
+    volumes:
+      - wallet_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+    restart: unless-stopped
+    ports:
+      - "9300:9300"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: personal_wallet_backend
+      DB_USERNAME: wallet
+      DB_PASSWORD: wallet
+      SESSION_DOMAIN: localhost
+      SANCTUM_STATEFUL_DOMAINS: localhost:3100
+      FRONTEND_URL: http://localhost:3100
+    volumes:
+      - .:/var/www/html
+      - wallet_backend_vendor:/var/www/html/vendor
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+    ports:
+      - "8082:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ../personal-wallet-frontend
+    restart: unless-stopped
+    ports:
+      - "3100:3000"
+    environment:
+      VITE_API_BASE_URL: http://localhost:9300
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ../personal-wallet-frontend:/app
+      - wallet_frontend_node_modules:/app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  wallet_mysql_data:
+  wallet_backend_vendor:
+  wallet_frontend_node_modules:

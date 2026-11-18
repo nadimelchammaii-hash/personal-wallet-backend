@@ -53,7 +53,13 @@ Demo accounts expire 24 hours after creation and can't change their profile or p
 
 ## Getting started
 
-The easiest way to run the full stack (this API + the frontend + MySQL + phpMyAdmin) is the `docker-compose.yml` one level up, at the root of the project checkout — see that file's own instructions. To run just this API standalone:
+The easiest way to run the full stack (this API + the frontend + MySQL + phpMyAdmin) is `docker-compose.yml` in this repo — it also builds the frontend from a sibling `../personal-wallet-frontend` checkout, so clone both repos side by side first:
+
+```bash
+docker compose up
+```
+
+To run just this API standalone instead:
 
 ```bash
 composer install
