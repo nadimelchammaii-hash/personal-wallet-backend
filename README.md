@@ -1,58 +1,77 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# TrackMyWallet — API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+The Laravel API behind [TrackMyWallet](https://trackmywallet.org), a personal finance app for tracking accounts, transactions, budgets, and savings goals. This repo is the backend half; the SPA that consumes it lives in [`personal-wallet-frontend`](https://github.com/nadimelchammaii-hash/personal-wallet-frontend).
 
-## About Laravel
+**Live demo: [trackmywallet.org](https://trackmywallet.org)** — click **Try the demo** on the login page for an instant, pre-populated account. No sign-up required.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+![Dashboard](docs/screenshots/dashboard.png)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## What it does
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+TrackMyWallet is a full personal-budgeting app:
 
-## Learning Laravel
+- **Accounts** — cash, bank, credit card, and savings accounts, each with a running balance kept in sync by every transaction, transfer, and reversal.
+- **Transactions** — income and expenses by category, transfers between your own accounts (as linked debit/credit legs), filtering by account/category/type/date, free-text search.
+- **Categories** — a shared set of defaults (Food, Bills, Transportation, …) plus user-defined custom categories.
+- **Budgets** — a monthly spending cap per category, with progress and an over-budget flag computed from actual spend.
+- **Savings goals** — a target amount and date, funded by logged contributions, auto-completing once the target is reached.
+- **Reports** — income vs. expenses over time, spending by category, and budget vs. actual, all driven by real aggregate queries (no client-side computation).
+- **Auth** — standard email/password registration, login, logout, and password reset, plus a one-click demo login (see below).
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## The live demo
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+The **Try the demo** button on the login page calls `POST /api/v1/demo-login`, which:
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+1. Creates a brand-new, fully isolated user (not a shared seeded account — every visitor gets their own).
+2. Seeds it with ~5 months of realistic history: a monthly salary, rent/bills, groceries, transport, entertainment, a few one-off irregular expenses, transfers into savings, and goal contributions spread out over time — tuned so the current month's budgets show a believable mix of over/under.
+3. Logs the new user in exactly like a real login (same Sanctum session).
 
-## Agentic Development
+Demo accounts expire 24 hours after creation and can't change their profile or password. Cleanup is lazy rather than cron-driven: each `demo-login` call sweeps any accounts past their expiry before creating a new one, which keeps the feature self-contained with no scheduler required.
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Stack
+
+- **PHP 8.3+**, **Laravel 13**
+- **Laravel Sanctum** — SPA (cookie + CSRF) authentication, not token-based; the API and SPA are treated as same-origin in production
+- **MySQL 8**
+- **Pest** for testing (91 feature tests)
+- **Docker Compose** for local dev; **Docker + Caddy** in production (see [Deployment](#deployment))
+
+## How it works
+
+- **Decoupled from the frontend.** This is a pure JSON API (`routes/api.php`, versioned under `/api/v1`). It has no views of its own beyond the default Laravel welcome page. CORS and Sanctum's stateful-domain config are what let the SPA (on its own subdomain/port in dev) authenticate via cookies.
+- **Thin controllers, real service objects.** Business logic that has to stay consistent — like keeping an account's `current_balance` correct across creates/edits/deletes of transactions and transfers — lives in `app/Services/TransactionService.php`, not scattered across controllers.
+- **Authorization via policies.** Every mutable resource (`Account`, `Transaction`, `Budget`, `SavingsGoal`, `Category`) has a policy gating access to its owner only.
+- **Form Requests validate, Resources shape the response.** Every endpoint has a dedicated `FormRequest` under `app/Http/Requests/Api/V1/...` and a matching `JsonResource` — no ad hoc validation or array-building in controllers.
+- **The demo feature reuses production code paths.** `App\Services\DemoDataSeeder` seeds transactions through the same `TransactionService` a real request would use, so balances, budgets, and reports are exactly as consistent for a demo account as for a real one.
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Budgets](docs/screenshots/budgets.png) | ![Goals](docs/screenshots/goals.png) |
+| ![Transactions](docs/screenshots/transactions.png) | ![Reports](docs/screenshots/reports.png) |
+
+## Getting started
+
+The easiest way to run the full stack (this API + the frontend + MySQL + phpMyAdmin) is the `docker-compose.yml` one level up, at the root of the project checkout — see that file's own instructions. To run just this API standalone:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+cp .env.example .env
+php artisan key:generate
+# point DB_* in .env at a MySQL instance, then:
+php artisan migrate --seed   # seeds the shared default categories
+php artisan serve
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### Tests
 
-## Contributing
+```bash
+php artisan test
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+91 Pest feature tests cover auth, every CRUD resource, transfers, the dashboard/report aggregations, and the demo-login flow (including its 24h expiry sweep and rate limiting).
 
-## Code of Conduct
+## Deployment
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Production runs as three Docker containers behind Caddy: `mysql`, a `backend` container built from `Dockerfile.prod` (PHP-FPM, `composer install --no-dev`), and a `frontend` container whose Caddy instance serves the built SPA and reverse-proxies `/api/*` and `/sanctum/*` straight to this API's PHP-FPM socket — so the browser only ever talks to one origin. See `docker-compose.prod.yml` and `Dockerfile.prod`.
